@@ -16,6 +16,7 @@
     "devevaluate": "file:..",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
+    "inngest": "^3.52.1",
     "mongoose": "^9.2.1"
   },
   "devDependencies": {
