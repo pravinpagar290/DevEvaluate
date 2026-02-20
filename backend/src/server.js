@@ -4,10 +4,10 @@ import path from "path";
 import { connectDB } from "./utils/db.js";
 import cors from "cors";
 import { serve } from "inngest/express";
-import {inngest,functions} from "./utils/inngest.js"
-
+import { inngest, functions } from "./utils/inngest.js";
 
 const app = express();
+app.use(express.json());
 app.use(
   cors({
     origin: ENV.CLIENT_URL,
