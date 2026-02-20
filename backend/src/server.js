@@ -3,6 +3,8 @@ import { ENV } from "./utils/env.js";
 import path from "path";
 import { connectDB } from "./utils/db.js";
 import cors from "cors";
+import { serve } from "inngest/express";
+
 
 const app = express();
 app.use(
@@ -16,6 +18,8 @@ const __dirname = path.resolve();
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
+
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
