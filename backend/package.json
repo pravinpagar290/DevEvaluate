@@ -12,12 +12,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "chalk": "^5.6.2",
     "cors": "^2.8.6",
     "devevaluate": "file:..",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
     "inngest": "^3.52.1",
-    "mongoose": "^9.2.1"
+    "mongoose": "^9.2.1",
+    "stream-chat": "^9.35.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

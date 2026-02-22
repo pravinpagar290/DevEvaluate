@@ -5,9 +5,26 @@ import { connectDB } from "./utils/db.js";
 import cors from "cors";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./utils/inngest.js";
+import { logger } from "./utils/logger.js";
 
 const app = express();
 app.use(express.json());
+
+// Request logger middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    const message = `${req.method} ${req.url} ${res.statusCode} - ${duration}ms`;
+    if (res.statusCode >= 400) {
+      logger.error(message);
+    } else {
+      logger.info(message);
+    }
+  });
+  next();
+});
+
 app.use(
   cors({
     origin: ENV.CLIENT_URL,
@@ -35,10 +52,10 @@ const serverStart = async () => {
   try {
     await connectDB();
     app.listen(ENV.PORT, () => {
-      console.log(`Server is running on PORT ${ENV.PORT}`);
+      logger.success(`Server is running on PORT ${ENV.PORT}`);
     });
   } catch (error) {
-    console.error("unable to start the server");
+    logger.error("Unable to start the server", error);
   }
 };
 serverStart();
