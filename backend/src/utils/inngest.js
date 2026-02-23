@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import { connectDB } from "./db.js";
 import User from "../models/User.model.js";
 import { logger } from "./logger.js";
+import { upsertStreamUser, deleteStreamUser } from "./stream.js";
 
 export const inngest = new Inngest({ id: "evaluate-Dev" });
 
@@ -23,12 +24,11 @@ const syncUser = inngest.createFunction(
       };
       await User.create(newUser);
       logger.success(`Successfully synced user: ${id}`);
-          await upsertStreamUser({
-      id: newUser.clerkId.toString(),
-      name: newUser.name,
-      image: newUser.profileImage,
-    });
-
+      await upsertStreamUser({
+        id: newUser.clerkId.toString(),
+        name: newUser.name,
+        image: newUser.profileImage,
+      });
     } catch (error) {
       logger.error(`Error syncing user: ${event.data.id}`, error);
       throw error;
