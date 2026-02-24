@@ -17,5 +17,8 @@
     "url": "https://github.com/pravinpagar290/DevEvaluate/issues"
   },
   "homepage": "https://github.com/pravinpagar290/DevEvaluate#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@stream-io/node-sdk": "^0.7.42"
+  }
 }
