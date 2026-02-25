@@ -2,21 +2,21 @@ import express from "express";
 import { protectRoute } from "../middleware/protectRoute.js";
 import {
   createSession,
-  getSessions,
+  endSession,
+  getActiveSessions,
+  getMyRecentSessions,
   getSessionById,
   joinSession,
-  closeSession,
-  deleteSession,
 } from "../controllers/sessionController.js";
 
 const router = express.Router();
 
-// All routes require authentication
-router.get("/", protectRoute, getSessions);
 router.post("/", protectRoute, createSession);
+router.get("/active", protectRoute, getActiveSessions);
+router.get("/my-recent", protectRoute, getMyRecentSessions);
+
 router.get("/:id", protectRoute, getSessionById);
 router.post("/:id/join", protectRoute, joinSession);
-router.patch("/:id/close", protectRoute, closeSession);
-router.delete("/:id", protectRoute, deleteSession);
+router.post("/:id/end", protectRoute, endSession);
 
 export default router;
