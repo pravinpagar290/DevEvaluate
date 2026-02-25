@@ -1,4 +1,5 @@
 import { chatClient } from "../utils/stream.js";
+import { logger } from "../utils/logger.js";
 
 export async function getStreamToken(req, res) {
   try {

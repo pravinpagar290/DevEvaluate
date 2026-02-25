@@ -22,7 +22,10 @@ const syncUser = inngest.createFunction(
         name: `${first_name || ""} ${last_name || ""}`,
         profileImage: image_url,
       };
-      await User.create(newUser);
+      await User.findOneAndUpdate({ clerkId: newUser.clerkId }, newUser, {
+        upsert: true,
+        new: true,
+      });
       logger.success(`Successfully synced user: ${id}`);
       await upsertStreamUser({
         id: newUser.clerkId.toString(),
