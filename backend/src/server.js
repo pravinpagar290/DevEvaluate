@@ -8,13 +8,22 @@ import { inngest, functions } from "./utils/inngest.js";
 import { logger } from "./utils/logger.js";
 import { clerkMiddleware } from "@clerk/express";
 import { protectRoute } from "./middleware/protectRoute.js";
-import chatRoutes from "./routes/chatRoutes.js";
-import sessionRoutes from "./routes/sessionRoutes.js";
+import chatRoutes from "./routes/chat.routes.js";
+import sessionRoutes from "./routes/session.routes.js";
 
 const app = express();
-app.use(express.json());
 
+// CORS must be first so preflight OPTIONS requests are handled before auth
+app.use(
+  cors({
+    origin: ENV.CLIENT_URL,
+    credentials: true,
+  }),
+);
+
+app.use(express.json());
 app.use(clerkMiddleware());
+
 // Request logger middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -29,13 +38,6 @@ app.use((req, res, next) => {
   });
   next();
 });
-
-app.use(
-  cors({
-    origin: ENV.CLIENT_URL,
-    credentials: true,
-  }),
-);
 const __dirname = path.resolve();
 
 app.get("/health", (req, res) => {

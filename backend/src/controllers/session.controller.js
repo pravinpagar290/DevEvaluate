@@ -1,5 +1,5 @@
-import { chatClient, streamClient } from "../lib/stream.js";
-import Session from "../models/Session.js";
+import { chatClient, streamClient } from "../utils/stream.js";
+import Session from "../models/Session.model.js";
 
 export async function createSession(req, res) {}
 
@@ -40,7 +40,7 @@ export async function endSession(req, res) {
     const channel = chatClient.channel("messaging", session.callId);
     await channel.delete();
 
-    session.status = "completed";
+    session.status = "closed";
     await session.save();
 
     res.status(200).json({ session, message: "Session ended successfully" });
