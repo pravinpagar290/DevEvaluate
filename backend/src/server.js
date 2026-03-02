@@ -38,6 +38,7 @@ app.use((req, res, next) => {
   });
   next();
 });
+
 const __dirname = path.resolve();
 
 app.get("/health", (req, res) => {
