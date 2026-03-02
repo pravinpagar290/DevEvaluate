@@ -1,4 +1,3 @@
-import "./App.css";
 import {
   SignedIn,
   SignedOut,
@@ -6,19 +5,21 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/clerk-react";
+import { Routes, Route, Navigate } from "react-router";
+import { useUser } from "@clerk/clerk-react";
+import Home from "./pages/Home.jsx";
+import Problems from "./pages/Problems.jsx";
 
 function App() {
+  const { isSignedIn } = useUser();
   return (
-    <>
-      <SignedOut>
-        <SignInButton mode="modal" />
-        <SignUpButton mode="modal" />
-      </SignedOut>
-      {/* Show the user button when the user is signed in */}
-      <SignedIn>
-        <UserButton />
-      </SignedIn>
-    </>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route
+        path="/problems"
+        element={isSignedIn ? <Problems /> : <Navigate to="/" />}
+      />
+    </Routes>
   );
 }
 
