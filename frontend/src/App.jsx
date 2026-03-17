@@ -7,17 +7,17 @@ import {
 } from "@clerk/clerk-react";
 import { Routes, Route, Navigate } from "react-router";
 import { useUser } from "@clerk/clerk-react";
-import Home from "./pages/Home.jsx";
-import Problems from "./pages/Problems.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import Problems from "./pages/ProblemsPage.jsx";
 
 function App() {
   const { isSignedIn } = useUser();
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<HomePage />} />
       <Route
         path="/problems"
-        element={isSignedIn ? <Problems /> : <Navigate to="/" />}
+        element={isSignedIn ? <ProblemsPage /> : <Navigate to="/" />}
       />
     </Routes>
   );
