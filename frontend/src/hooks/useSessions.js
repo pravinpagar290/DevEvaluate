@@ -16,22 +16,22 @@ export const useCreateSession = () => {
 };
 
 export const useActiveSessions = () => {
-  const { user } = useUser();
+  const { user,isLoaded } = useUser();
   const result = useQuery({
     queryKey: ["activeSessions"],
     queryFn: sessionApi.getActiveSessions,
-    enabled: !!user?.id,
+    enabled: !!user?.id && isLoaded,
   });
 
   return result;
 };
 
 export const useMyRecentSessions = () => {
-  const { user } = useUser();
+  const { user,isLoaded } = useUser();
   const result = useQuery({
     queryKey: ["myRecentSessions"],
     queryFn: sessionApi.getMyRecentSessions,
-    enabled: !!user?.id,
+    enabled: !!user?.id && isLoaded,
   });
 
   return result;

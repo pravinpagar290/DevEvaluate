@@ -1,5 +1,6 @@
-import express from "express";
 import { ENV } from "./utils/env.js";
+console.log("CLERK_SECRET_KEY:", process.env.CLERK_SECRET_KEY ? "EXISTS" : "MISSING")
+import express from "express";
 import path from "path";
 import { connectDB } from "./utils/db.js";
 import cors from "cors";
@@ -22,7 +23,19 @@ app.use(
 );
 
 app.use(express.json());
-app.use(clerkMiddleware());
+app.use(clerkMiddleware({
+  authorizedParties:[
+    "http://localhost:5173",
+    "http://localhost:4000",
+  ]
+}));
+
+
+app.use((req, res, next) => {
+  console.log("📥 Incoming request:", req.method, req.url)
+  console.log("🔑 Auth header:", req.headers.authorization ? "EXISTS" : "MISSING")
+  next()
+})
 
 // Request logger middleware
 app.use((req, res, next) => {
