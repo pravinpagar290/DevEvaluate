@@ -1,84 +1,81 @@
-// Piston API is a service for code execution
+const JUDGE0_API = "https://ce.judge0.com";
 
-const PISTON_API = "https://emkc.org/api/v2/piston";
-
-const LANGUAGE_VERSIONS = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
+const LANGUAGE_MAP = {
+  javascript: 63,
+  python: 71,
+  java: 62,
 };
 
-/**
- * @param {string} language - programming language
- * @param {string} code - source code to executed
- * @returns {Promise<{success:boolean, output?:string, error?: string}>}
- */
 export async function executeCode(language, code) {
   try {
-    const languageConfig = LANGUAGE_VERSIONS[language];
+    const languageId = LANGUAGE_MAP[language];
 
-    if (!languageConfig) {
+    if (!languageId) {
       return {
         success: false,
         error: `Unsupported language: ${language}`,
       };
     }
 
-    const response = await fetch(`${PISTON_API}/execute`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        language: languageConfig.language,
-        version: languageConfig.version,
-        files: [
-          {
-            name: `main.${getFileExtension(language)}`,
-            content: code,
-          },
-        ],
-      }),
-    });
+    // STEP 1: Submit code
+    const submitResponse = await fetch(
+      `${JUDGE0_API}/submissions?base64_encoded=false&wait=false`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          source_code: code,
+          language_id: languageId,
+        }),
+      }
+    );
 
-    if (!response.ok) {
+    const submitData = await submitResponse.json();
+
+    // 🔴 IMPORTANT CHECK
+    if (!submitData.token) {
       return {
         success: false,
-        error: `HTTP error! status: ${response.status}`,
+        error: "Failed to get token",
+        details: submitData,
       };
     }
 
-    const data = await response.json();
+    const token = submitData.token;
 
-    const output = data.run.output || "";
-    const stderr = data.run.stderr || "";
+    // STEP 2: Poll result (LIMITED retries)
+    let result;
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(
+        `${JUDGE0_API}/submissions/${token}?base64_encoded=false`
+      );
 
-    if (stderr) {
+      result = await res.json();
+
+      if (result.status && result.status.id >= 3) break;
+
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    // STEP 3: Handle output
+    if (result.stderr) {
       return {
         success: false,
-        output: output,
-        error: stderr,
+        error: result.stderr,
       };
     }
 
     return {
       success: true,
-      output: output || "No output",
+      output: result.stdout || "No output",
     };
+
   } catch (error) {
     return {
       success: false,
-      error: `Failed to execute code: ${error.message}`,
+      error: `Execution failed: ${error.message}`,
     };
   }
-}
-
-function getFileExtension(language) {
-  const extensions = {
-    javascript: "js",
-    python: "py",
-    java: "java",
-  };
-
-  return extensions[language] || "txt";
 }

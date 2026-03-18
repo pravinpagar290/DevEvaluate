@@ -1,31 +1,37 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { sessionApi } from "../api/sessions.js";
+import { useUser } from "@clerk/clerk-react";
 
 export const useCreateSession = () => {
   const result = useMutation({
     mutationKey: ["createSession"],
     mutationFn: sessionApi.createSession,
     onSuccess: () => toast.success("Session created successfully!"),
-    onError: (error) => toast.error(error.response?.data?.message || "Failed to create room"),
+    onError: (error) =>
+      toast.error(error.response?.data?.message || "Failed to create room"),
   });
 
   return result;
 };
 
 export const useActiveSessions = () => {
+  const { user } = useUser();
   const result = useQuery({
     queryKey: ["activeSessions"],
     queryFn: sessionApi.getActiveSessions,
+    enabled: !!user?.id,
   });
 
   return result;
 };
 
 export const useMyRecentSessions = () => {
+  const { user } = useUser();
   const result = useQuery({
     queryKey: ["myRecentSessions"],
     queryFn: sessionApi.getMyRecentSessions,
+    enabled: !!user?.id,
   });
 
   return result;
@@ -47,7 +53,8 @@ export const useJoinSession = () => {
     mutationKey: ["joinSession"],
     mutationFn: sessionApi.joinSession,
     onSuccess: () => toast.success("Joined session successfully!"),
-    onError: (error) => toast.error(error.response?.data?.message || "Failed to join session"),
+    onError: (error) =>
+      toast.error(error.response?.data?.message || "Failed to join session"),
   });
 
   return result;
@@ -58,7 +65,8 @@ export const useEndSession = () => {
     mutationKey: ["endSession"],
     mutationFn: sessionApi.endSession,
     onSuccess: () => toast.success("Session ended successfully!"),
-    onError: (error) => toast.error(error.response?.data?.message || "Failed to end session"),
+    onError: (error) =>
+      toast.error(error.response?.data?.message || "Failed to end session"),
   });
 
   return result;

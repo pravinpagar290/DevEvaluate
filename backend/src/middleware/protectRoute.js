@@ -12,7 +12,7 @@ export const protectRoute = [
       req.user = user;
       next();
     } catch (error) {
-      console.error("Error in protectRoute middleware", error);
+      logger.error("Error in protectRoute middleware", error);
       res.status(500).json({ message: "Internal server error" });
     }
   },
