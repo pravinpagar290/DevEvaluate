@@ -1,8 +1,13 @@
-import { chatClient } from "../utils/stream.js";
-import { logger } from "../utils/logger.js";
+import { chatClient, upsertStreamUser } from "../utils/stream.js";
 
 export async function getStreamToken(req, res) {
   try {
+    await upsertStreamUser({
+      id: req.user.clerkId.toString(),
+      name: req.user.name,
+      image: req.user.profileImage,
+    });
+
     const token = chatClient.createToken(req.user.clerkId);
 
     res.status(200).json({

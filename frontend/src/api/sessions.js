@@ -6,7 +6,8 @@ export const sessionApi = {
       const response = await axiosInstance.post("/sessions", data);
       return response.data;
     } catch (error) {
-      console.log(error);
+      console.error("createSession API error:", error);
+      throw error;
     }
   },
 
