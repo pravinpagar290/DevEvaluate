@@ -1,4 +1,4 @@
-import { chatClient, streamClient } from "../utils/stream.js";
+import { chatClient, streamClient, upsertStreamUser } from "../utils/stream.js";
 import Session from "../models/Session.model.js";
 
 export async function createSession(req, res) {
@@ -10,6 +10,13 @@ export async function createSession(req, res) {
     if (!problem || !difficulty) {
       return res.status(400).json({ message: "Problem and difficulty are required" });
     }
+
+    // Ensure the current user exists in Stream before creating resources.
+    await upsertStreamUser({
+      id: clerkId.toString(),
+      name: req.user.name,
+      image: req.user.profileImage,
+    });
 
     // generate a unique call id for stream video
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
