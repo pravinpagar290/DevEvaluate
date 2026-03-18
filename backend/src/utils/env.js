@@ -6,6 +6,7 @@ export const ENV = {
   PORT: process.env.PORT,
   MONGODB_URI: process.env.MONGODB_URI,
   NODE_ENV: process.env.NODE_ENV,
+  SERVE_FRONTEND: process.env.SERVE_FRONTEND,
   CLIENT_URL: process.env.CLIENT_URL,
   INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
   INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
