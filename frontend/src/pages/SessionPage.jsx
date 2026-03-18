@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions.js";
 import { PROBLEMS } from "../data/problems";
-import Navbar from "../components/NavBar.jsx";
+import Navbar from "../components/NavBar.jsx"
 import { executeCode } from "../lib/piston";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
