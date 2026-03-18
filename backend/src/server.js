@@ -52,8 +52,6 @@ app.use((req, res, next) => {
   next();
 });
 
-const __dirname = path.resolve();
-
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
@@ -63,8 +61,11 @@ app.get("/video-calls", protectRoute, (req, res) => {
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
-// make our app ready for deployment
-if (ENV.NODE_ENV === "production") {
+
+const __dirname = path.resolve();
+
+// Optional fallback for single-server deployments.
+if (ENV.NODE_ENV === "production" && ENV.SERVE_FRONTEND === "true") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
   app.get("*", (req, res) => {
