@@ -1,7 +1,6 @@
 import axios from "axios";
-import { useAuth } from "@clerk/clerk-react";
 
-const DEFAULT_API = "http://localhost:4000/api";
+const DEFAULT_API = import.meta.env.MODE === "development" ? "http://localhost:4000/api" : "https://devevaluate.onrender.com/api";
 const baseURL = (import.meta.env?.VITE_API_URL || DEFAULT_API).replace(/\/$/, "");
 
 const axiosInstance = axios.create({
