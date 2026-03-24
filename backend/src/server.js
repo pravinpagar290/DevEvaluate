@@ -1,5 +1,4 @@
 import { ENV } from "./utils/env.js";
-console.log("CLERK_SECRET_KEY:", process.env.CLERK_SECRET_KEY ? "EXISTS" : "MISSING")
 import express from "express";
 import path from "path";
 import { connectDB } from "./utils/db.js";
@@ -17,7 +16,7 @@ const app = express();
 // CORS must be first so preflight OPTIONS requests are handled before auth
 app.use(
   cors({
-    origin: ENV.CLIENT_URL,
+    origin: ENV.CLIENT_URL || "https://devevaluate.netlify.app",
     credentials: true,
   }),
 );
@@ -27,6 +26,7 @@ app.use(clerkMiddleware({
   authorizedParties:[
     "http://localhost:5173",
     "http://localhost:4000",
+    "https://devevaluate.netlify.app",
   ]
 }));
 
