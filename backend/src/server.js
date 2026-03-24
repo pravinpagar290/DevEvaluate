@@ -16,7 +16,11 @@ const app = express();
 // CORS must be first so preflight OPTIONS requests are handled before auth
 app.use(
   cors({
-    origin: ENV.CLIENT_URL || "https://devevaluate.netlify.app",
+    origin: [
+      "http://localhost:5173",
+      "https://devevaluate.netlify.app",
+      ENV.CLIENT_URL,
+    ].filter(Boolean),
     credentials: true,
   }),
 );
