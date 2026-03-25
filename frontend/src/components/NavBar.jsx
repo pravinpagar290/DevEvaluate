@@ -15,13 +15,11 @@ function Navbar() {
           to="/"
           className="group flex items-center gap-3 hover:scale-105 transition-transform duration-200"
         >
-          <div className="size-10 rounded-xl bg-gradient-to-r from-primary via-secondary to-accent flex items-center justify-center shadow-lg ">
-            <SparklesIcon className="size-6 text-white" />
-          </div>
+          <img src="/logo.png" alt="DevEvaluate Logo" className="w-10 h-10 object-contain mix-blend-plus-lighter" />
 
           <div className="flex flex-col">
-            <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-              Talent IQ
+            <span className="font-black text-xl text-white font-mono tracking-wider">
+              DevEvaluate
             </span>
             <span className="text-xs text-base-content/60 font-medium -mt-1">
               Code Together
