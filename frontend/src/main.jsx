@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter } from "react-router";
 import { Toaster } from "react-hot-toast";
+import { HelmetProvider } from "react-helmet-async";
 import {
   QueryClient,
   QueryClientProvider,
@@ -19,12 +20,14 @@ if (!PUBLISHABLE_KEY) {
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById("root")).render(
-  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-    <BrowserRouter>
-     <QueryClientProvider client={queryClient}>
-      <App />
-      <Toaster position="bottom-right"  toastOptions={{duration:3000}}/>
-     </QueryClientProvider>
-    </BrowserRouter>
-  </ClerkProvider>,
+  <HelmetProvider>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <App />
+        <Toaster position="bottom-right"  toastOptions={{duration:3000}}/>
+      </QueryClientProvider>
+      </BrowserRouter>
+    </ClerkProvider>
+  </HelmetProvider>,
 );

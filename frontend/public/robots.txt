@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /problems
+Disallow: /problem/
+Disallow: /session/
+
+Sitemap: https://devevaluate.com/sitemap.xml
