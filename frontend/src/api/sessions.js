@@ -37,4 +37,13 @@ export const sessionApi = {
     const response = await axiosInstance.get(`/chat/token`);
     return response.data;
   },
+  getCodeReview:async(code)=>{
+    try {
+      const response= await axiosInstance.post(`/code-review`, { code });
+      return response.data;
+    } catch (error) {
+      console.error("getCodeReview API error:", error);
+      throw error;
+    }
+  }
 };

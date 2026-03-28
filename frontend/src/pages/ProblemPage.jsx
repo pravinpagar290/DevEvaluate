@@ -8,6 +8,7 @@ import ProblemDescription from "../components/ProblemDescription";
 import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import { executeCode } from "../lib/piston";
+import CodeReview from "../components/CodeReview";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -21,6 +22,7 @@ function ProblemPage() {
   const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [review,setReview]= useState(false)
 
   const currentProblem = PROBLEMS[currentProblemId];
 
@@ -113,7 +115,7 @@ function ProblemPage() {
       <div className="flex-1">
         <PanelGroup direction="horizontal">
           {/* left panel- problem desc */}
-          <Panel defaultSize={40} minSize={30}>
+          <Panel id="problem-description" order={1} defaultSize={30} minSize={20}>
             <ProblemDescription
               problem={currentProblem}
               currentProblemId={currentProblemId}
@@ -125,10 +127,10 @@ function ProblemPage() {
           <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
 
           {/* right panel- code editor & output */}
-          <Panel defaultSize={60} minSize={30}>
+          <Panel id="code-editor-section" order={2} defaultSize={40} minSize={30}>
             <PanelGroup direction="vertical">
               {/* Top panel - Code editor */}
-              <Panel defaultSize={70} minSize={30}>
+              <Panel id="editor-top" order={1} defaultSize={70} minSize={30}>
                 <CodeEditorPanel
                   selectedLanguage={selectedLanguage}
                   code={code}
@@ -136,6 +138,8 @@ function ProblemPage() {
                   onLanguageChange={handleLanguageChange}
                   onCodeChange={setCode}
                   onRunCode={handleRunCode}
+                  showReview={review}
+                  onReviewToggle={() => setReview(!review)}
                 />
               </Panel>
 
@@ -143,11 +147,22 @@ function ProblemPage() {
 
               {/* Bottom panel - Output Panel*/}
 
-              <Panel defaultSize={30} minSize={30}>
+              <Panel id="output-bottom" order={2} defaultSize={30} minSize={30}>
                 <OutputPanel output={output} />
               </Panel>
             </PanelGroup>
           </Panel>
+
+          {review && (
+            <>
+              <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+              <Panel id="ai-code-review" order={3} defaultSize={30} minSize={20}>
+                <div className="h-full bg-base-200 overflow-y-auto">
+                  <CodeReview code={code} />
+                </div>
+              </Panel>
+            </>
+          )}
         </PanelGroup>
       </div>
     </div>
