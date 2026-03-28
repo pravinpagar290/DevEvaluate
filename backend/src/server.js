@@ -10,6 +10,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { protectRoute } from "./middleware/protectRoute.js";
 import chatRoutes from "./routes/chat.routes.js";
 import sessionRoutes from "./routes/session.routes.js";
+import codeReviewRoutes from "./routes/code-review.routes.js";
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.get("/video-calls", protectRoute, (req, res) => {
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/code-review", codeReviewRoutes);
 
 const __dirname = path.resolve();
 

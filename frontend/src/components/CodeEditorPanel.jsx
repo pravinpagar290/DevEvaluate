@@ -9,6 +9,8 @@ function CodeEditorPanel({
   onLanguageChange,
   onCodeChange,
   onRunCode,
+  showReview,
+  onReviewToggle,
 }) {
   return (
     <div className="h-full bg-base-300 flex flex-col">
@@ -28,19 +30,29 @@ function CodeEditorPanel({
           </select>
         </div>
 
-        <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
-          {isRunning ? (
-            <>
-              <Loader2Icon className="size-4 animate-spin" />
-              Running...
-            </>
-          ) : (
-            <>
-              <PlayIcon className="size-4" />
-              Run Code
-            </>
+        <div className="flex items-center gap-2">
+          {onReviewToggle && (
+            <button
+              className={`btn btn-sm gap-2 ${showReview ? "btn-secondary" : "btn-outline"}`}
+              onClick={onReviewToggle}
+            >
+              AI Review
+            </button>
           )}
-        </button>
+          <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
+            {isRunning ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <PlayIcon className="size-4" />
+                Run Code
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1">
