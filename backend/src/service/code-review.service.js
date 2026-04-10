@@ -1,12 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
+import { ENV } from "../utils/env.js";
 
-const apiKey = process.env.GOOGLE_GEMINI_KEY || null;
-let model = null;
-if (apiKey) {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash-lite",
-    systemInstruction: `
+const apiKey = ENV.GROQ_API_KEY || null;
+const groq = apiKey ? new Groq({ apiKey }) : null;
+
+const systemInstruction = `
 Role & Responsibilities: You are an expert code reviewer with 7+ years of development experience. Your goal is to provide quick, high-impact feedback. Focus on identifying key issues and actionable improvements without unnecessary fluff. Prioritize readability, maintainability, and best practices.
 
 Guidelines for Review:
@@ -47,25 +45,36 @@ Suggestions
 
 [Suggestion 2]
 
-[Suggestion 3] `,
-  });
-}
+[Suggestion 3] `;
 
 export default async function generateContent(prompt) {
   try {
-    if (!model) {
-      const e = new Error("Missing GOOGLE_GEMINI_KEY environment variable");
+    if (!groq) {
+      const e = new Error("Missing GROQ_API_KEY environment variable");
       e.status = 500;
       throw e;
     }
-    const result = await model.generateContent(prompt);
-    const text = await result.response.text();
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemInstruction,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      model: "llama-3.3-70b-versatile",
+    });
+
+    const text = chatCompletion.choices[0]?.message?.content || "";
     console.log(text);
     return text;
   } catch (err) {
     console.error("generateContent error:", err);
-    const message =
-      err.errorDetails?.[0]?.message || err.message || "AI request failed";
+    const message = err.message || "AI request failed";
     const e = new Error(message);
     e.status = err.status || err.statusCode || 500;
     throw e;

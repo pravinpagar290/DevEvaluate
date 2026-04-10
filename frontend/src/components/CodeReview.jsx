@@ -26,7 +26,8 @@ const CodeReview = ({ code }) => {
       setReview(result);
     } catch (err) {
       console.error("failed to get a review", err);
-      setError("Failed to get code review. Please try again.");
+      const message = err.response?.data?.message || err.response?.data || err.message || "Failed to get code review.";
+      setError(message);
     } finally {
       setLoading(false);
     }

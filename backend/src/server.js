@@ -27,13 +27,7 @@ app.use(
 );
 
 app.use(express.json());
-app.use(clerkMiddleware({
-  authorizedParties:[
-    "http://localhost:5173",
-    "http://localhost:4000",
-    "https://devevaluate.netlify.app",
-  ]
-}));
+app.use(clerkMiddleware());
 
 
 app.use((req, res, next) => {
