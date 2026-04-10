@@ -10,6 +10,7 @@ import {
   ZapIcon,
 } from "lucide-react";
 import { SignInButton } from "@clerk/clerk-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 function HomePage() {
   const homeSchema = {
@@ -27,7 +28,7 @@ function HomePage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-base-100 via-base-200 to-base-300 min-h-screen">
+    <div className="bg-linear-to-br from-base-100 via-base-200 to-base-300 min-h-screen">
       <SEO 
         title="Home" 
         description="DevEvaluate - The ultimate platform for collaborative coding interviews and pair programming."
@@ -45,20 +46,23 @@ function HomePage() {
             <img src="/logo.png" alt="DevEvaluate Logo" className="w-10 h-10 object-contain mix-blend-plus-lighter" />
 
             <div className="flex flex-col">
-              <span className="font-black text-xl text-white font-mono tracking-wider">
-                DevEvaluate
-              </span>
+            <span className="font-black text-xl text-base-content font-mono tracking-wider">
+              DevEvaluate
+            </span>
               <span className="text-xs text-base-content/60 font-medium -mt-1">Code Together</span>
             </div>
           </Link>
 
           {/* AUTH BTN */}
-          <SignInButton mode="modal">
-            <button className="group px-6 py-3 bg-gradient-to-r from-primary to-secondary rounded-xl text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2">
-              <span>Get Started</span>
-              <ArrowRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </SignInButton>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <SignInButton mode="modal">
+              <button className="group px-6 py-3 bg-linear-to-r from-primary to-secondary rounded-xl text-primary-content font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2">
+                <span>Get Started</span>
+                <ArrowRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </SignInButton>
+          </div>
         </nav>
       </header>
 
@@ -74,7 +78,7 @@ function HomePage() {
             </div>
 
             <h1 className="text-5xl lg:text-7xl font-black leading-tight">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
                 Code Together,
               </span>
               <br />
@@ -138,7 +142,7 @@ function HomePage() {
           <img
             src="/hero.png"
             alt="CodeCollab Platform"
-            className="w-full h-auto rounded-3xl shadow-2xl border-4 border-base-100 hover:scale-105 transition-transform duration-500"
+            className="w-full h-auto rounded-3xl shadow-2xl border-4 border-base-300 hover:scale-105 transition-transform duration-500"
           />
         </div>
       </section>

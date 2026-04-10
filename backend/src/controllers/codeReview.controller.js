@@ -8,9 +8,10 @@ export async function getReview(req, res) {
       return res.status(400).send("Prompt is required");
     }
 
+    console.log("🚀 Code review request received, length:", code.length);
     const response = await codeReviewService(code);
 
-    res.send(response);
+    res.json({ review: response });
   } catch (err) {
     console.error("getReview error:", err);
     const status = err.status || err.statusCode || 500;

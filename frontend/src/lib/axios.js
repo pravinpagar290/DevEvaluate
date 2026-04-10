@@ -11,8 +11,10 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(async (config) => {
   try {
     // Wait for Clerk to be ready before getting token
+    console.log("🛠️ Axios interceptor: Checking Clerk...");
     await window.Clerk?.load();
     const token = await window.Clerk?.session?.getToken();
+    console.log("🛠️ Axios interceptor: Token", token ? "✅ FOUND" : "❌ MISSING");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

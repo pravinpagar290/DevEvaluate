@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router";
-import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon } from "lucide-react";
+import { BookOpenIcon, LayoutDashboardIcon } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
+import ThemeToggle from "./ThemeToggle";
 
 function Navbar() {
   const location = useLocation();
@@ -18,7 +19,7 @@ function Navbar() {
           <img src="/logo.png" alt="DevEvaluate Logo" className="w-10 h-10 object-contain mix-blend-plus-lighter" />
 
           <div className="flex flex-col">
-            <span className="font-black text-xl text-white font-mono tracking-wider">
+            <span className="font-black text-xl text-base-content font-mono tracking-wider">
               DevEvaluate
             </span>
             <span className="text-xs text-base-content/60 font-medium -mt-1">
@@ -63,6 +64,8 @@ function Navbar() {
               <span className="font-medium hidden sm:inline">Dashbord</span>
             </div>
           </Link>
+
+          <ThemeToggle />
 
           <div className="ml-4 mt-2">
             <UserButton />
