@@ -25,24 +25,37 @@ class SpeechAnalysisService {
         }
 
         const prompt = `
-        You are an expert AI Interview Assessor. Analyze the following transcript of a candidate's interview responses.
+        You are an expert AI Interview Assessor. Analyze the following transcript of a interview session.
         
         Transcript:
         "${fullTranscript}"
         
-        Please evaluate the text and provide the result strictly in the following JSON format without any markdown wrappers or additional text:
+        Task:
+        1. Evaluate the candidate's responses (prefixed with "Candidate:").
+        2. Provide a performance score (0-100).
+        3. Identify any grammatical errors in the candidate's speech.
+        4. Detect filler words (um, like, uh, etc.) used by the candidate.
+        5. Provide a constructive summary and feedback on their communication skills.
+
+        Output must be a valid JSON object ONLY, with these exact keys:
         {
-            "score": <number 0-100 based on sentence formation, clarity, and professionalism>,
-            "basicSentenceFormation": "<Brief feedback on how they structure their sentences>",
-            "grammaticalErrors": ["error 1", "error 2"],
-            "fillerWordsDetected": ["um", "like"],
-            "overallFeedback": "<A short summary of their speaking skills>"
-        }`;
+            "score": number,
+            "basicSentenceFormation": "string",
+            "grammaticalErrors": ["string"],
+            "fillerWordsDetected": ["string"],
+            "overallFeedback": "string"
+        }
+        
+        If the transcript is too short to evaluate fairly, provide a score of 0 and explain that more speech is needed in the overallFeedback.`;
 
         try {
+            if (!ENV.GROQ_API_KEY) {
+                throw new Error("GROQ_API_KEY is not defined in the environment variables.");
+            }
+
             const chatCompletion = await groq.chat.completions.create({
                 messages: [{ role: "user", content: prompt }],
-                model: "llama3-8b-8192", // Fast and efficient model for text analysis
+                model: "llama-3.1-8b-instant", // Newer, faster model
                 temperature: 0.3, // Low temperature for consistent JSON output
                 response_format: { type: "json_object" }
             });
@@ -60,8 +73,11 @@ class SpeechAnalysisService {
                 throw parseError;
             }
         } catch (error) {
-            console.error("❌ Error analyzing transcript with Groq:", error);
-            throw new Error("Failed to analyze transcript.");
+            console.error("❌ Groq API Error:", error.message || error);
+            if (error.response) {
+                console.error("❌ Groq Response Data:", error.response.data);
+            }
+            throw error;
         }
     }
 }

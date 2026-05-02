@@ -4,6 +4,7 @@
 
 let recognition = null;
 let isManuallyStopped = false;
+let isStarted = false;
 
 /**
  * Starts the Web Speech API recognition
@@ -19,6 +20,11 @@ export const startSpeechRecognition = (role = 'interviewee', onTranscript) => {
         return;
     }
 
+    if (isStarted) {
+        console.warn("⚠️ Speech recognition is already running.");
+        return;
+    }
+
     isManuallyStopped = false;
     recognition = new SpeechRecognition();
     recognition.continuous = true;       // Keep listening even if the user pauses
@@ -26,6 +32,7 @@ export const startSpeechRecognition = (role = 'interviewee', onTranscript) => {
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
+        isStarted = true;
         console.log(`%c🎤 Speech recognition started for: ${role.toUpperCase()}`, 'color: #9C27B0; font-weight: bold;');
     };
 
@@ -61,20 +68,28 @@ export const startSpeechRecognition = (role = 'interviewee', onTranscript) => {
 
     recognition.onerror = (event) => {
         if (event.error === 'no-speech') {
-            // Ignore no-speech errors, they are common when there is silence
             return;
         }
         console.error(`❌ Speech Recognition Error for ${role}:`, event.error);
+        if (event.error === 'aborted') {
+            isStarted = false;
+        }
     };
 
     recognition.onend = () => {
+        isStarted = false;
         if (!isManuallyStopped) {
             console.log(`%c🔄 Restarting speech recognition after silence for: ${role.toUpperCase()}`, 'color: #2196F3; font-weight: bold;');
-            try {
-                recognition.start();
-            } catch (err) {
-                console.error("Failed to auto-restart speech recognition:", err);
-            }
+            // Use a small timeout to ensure it has fully shut down before restarting
+            setTimeout(() => {
+                if (!isManuallyStopped && !isStarted) {
+                    try {
+                        recognition.start();
+                    } catch (err) {
+                        console.error("Failed to auto-restart speech recognition:", err);
+                    }
+                }
+            }, 100);
         } else {
             console.log(`%c🛑 Speech recognition completely ended for: ${role.toUpperCase()}`, 'color: #f44336; font-weight: bold;');
         }
@@ -89,8 +104,13 @@ export const startSpeechRecognition = (role = 'interviewee', onTranscript) => {
 
 export const stopSpeechRecognition = () => {
     isManuallyStopped = true;
+    isStarted = false;
     if (recognition) {
-        recognition.stop();
+        try {
+            recognition.stop();
+        } catch (e) {
+            // Recognition might already be stopped
+        }
         console.log("%c🛑 Speech recognition manually stopped.", 'color: #f44336; font-weight: bold;');
         recognition = null;
     }
