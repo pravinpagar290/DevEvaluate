@@ -29,12 +29,14 @@ app.use(
 app.use(express.json());
 app.use(clerkMiddleware());
 
-
 app.use((req, res, next) => {
-  console.log("📥 Incoming request:", req.method, req.url)
-  console.log("🔑 Auth header:", req.headers.authorization ? "EXISTS" : "MISSING")
-  next()
-})
+  console.log("📥 Incoming request:", req.method, req.url);
+  console.log(
+    "🔑 Auth header:",
+    req.headers.authorization ? "EXISTS" : "MISSING",
+  );
+  next();
+});
 
 // Request logger middleware
 app.use((req, res, next) => {
