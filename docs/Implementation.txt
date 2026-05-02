@@ -1,0 +1,83 @@
+Step-by-Step Implementation Roadmap
+This plan focuses on the Winner Approach (High Speed, Low Cost):
+
+Video/Vision: Processed entirely in the browser using JavaScript (MediaPipe + face-api.js).
+Audio/Speech: Streamed to a backend for transcription using OpenAI Whisper.
+Phase 1: Project Setup & Video Capture
+Step 1.1: Initialize the Frontend (React/Vanilla JS)
+Set up your React application or vanilla HTML/JS page.
+Create a standard Video Call UI. You need two main HTML elements:
+<video id="webcam" autoplay playsinline></video>
+<canvas id="overlay"></canvas> (Used to draw landmarks for testing).
+Step 1.2: Request Camera & Mic Permissions
+Write a JavaScript function using navigator.mediaDevices.getUserMedia({ video: true, audio: true }). Attach the resulting media stream to your <video> element.
+
+Phase 2: Client-Side Vision (The AI in the Browser)
+Step 2.1: Install Vision Libraries
+Install or include via CDN:
+
+@mediapipe/hands and @mediapipe/face_mesh
+face-api.js
+Step 2.2: Load AI Models
+Before the interview starts, download the models into the browser memory.
+
+javascript
+// Example for face-api.js
+await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+Step 2.3: The Processing Loop
+Create a JavaScript setInterval or requestAnimationFrame loop that runs every ~200 milliseconds (5 FPS). Inside this loop, pass the current video frame to your AI libraries:
+
+Emotion Check: faceapi.detectSingleFace(video).withFaceExpressions(). Extract the highest probability emotion (e.g., "happy: 0.8").
+Hand Tracking: Pass the frame to MediaPipe Hands. If hands are detected, log their x, y coordinates. If the coordinates change rapidly between frames, flag it as "High Hand Movement".
+Eye Contact (Gaze): Pass the frame to MediaPipe Face Mesh. Extract the coordinates of the Iris landmarks. Calculate if the Iris is centered relative to the eye corners. If centered -> "Looking at screen".
+Step 2.4: Buffer the Data
+Don't send data to the backend every single frame. Store it in a local JS array.
+
+javascript
+let sessionData = {
+  emotions: [], // ['neutral', 'happy', 'neutral', 'stressed']
+  eyeContact: [], // [true, true, false, true]
+  handMovementLevel: [] // [1, 2, 5, 2] (scale of 1-10)
+};
+Every 10 seconds, send this batch of data to your backend via an API call or WebSocket.
+
+Phase 3: Backend Audio & Speech (The Server)
+Step 3.1: Stream Audio to Backend
+On the frontend, use the MediaRecorder API to capture the microphone stream. Set it to trigger every 5 seconds (mediaRecorder.start(5000)). Send these 5-second audio chunks (Blob data) to your backend over a WebSocket connection.
+
+Step 3.2: Set up the Python Backend
+Create a FastAPI or Flask server with a WebSocket endpoint.
+
+Receive the audio chunks.
+Save them temporarily to a .wav file or keep them in memory.
+Step 3.3: Run Whisper Transcription
+Install OpenAI Whisper (pip install -U openai-whisper).
+Load the base model: model = whisper.load_model("base").
+Pass the incoming audio chunk to the model to get the text.
+Step 3.4: Analyze Filler Words & Speed
+Create a simple Python script to analyze the transcribed text.
+
+python
+import re
+def analyze_speech(transcript):
+    filler_words = len(re.findall(r'\b(um|uh|like|you know)\b', transcript.lower()))
+    word_count = len(transcript.split())
+    # Calculate WPM based on the 5-second chunk length
+    return {"fillers": filler_words, "wpm": (word_count / 5) * 60}
+Phase 4: Aggregation & The Final Dashboard
+Step 4.1: The Scoring Engine
+Once the interviewer clicks "End Interview", the backend runs the final calculation. It averages out the data it received from the frontend (Phase 2) and its own audio analysis (Phase 3).
+
+% Eye Contact = (Count of true / Total Gaze checks) * 100
+Total Fillers = Sum of all filler words detected.
+Dominant Emotion = The emotion string that appeared the most.
+Step 4.2: Generate Confidence Score
+Apply your weighting logic to generate a score out of 100.
+
+Step 4.3: Display Results
+Send the final JSON report back to the frontend. Build a React component for the Interviewer that displays:
+
+A Donut Chart for the Overall Score.
+A timeline graph showing moments of High Stress or High Hand Movement.
+A list of frequently used filler words.
