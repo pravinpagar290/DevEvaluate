@@ -7,7 +7,8 @@ import Navbar from "../components/NavBar.jsx"
 import { executeCode } from "../lib/piston";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
-import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon, PhoneOffIcon, Share2Icon } from "lucide-react";
+import toast from "react-hot-toast";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 
@@ -213,6 +214,12 @@ function SessionPage() {
     }
   };
 
+  const handleShareLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success("Session link copied to clipboard!");
+  };
+
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
       const transcript = fullTranscriptRef.current.trim();
@@ -237,7 +244,9 @@ function SessionPage() {
           <Panel defaultSize={50} minSize={30}>
             <PanelGroup direction="vertical">
               {/* PROBLEM DSC PANEL */}
-              <Panel defaultSize={50} minSize={20}>
+              {session?.problem !== "General Practice" && (
+                <>
+                  <Panel defaultSize={50} minSize={20}>
                 <div className="h-full overflow-y-auto bg-base-200">
                   {/* HEADER SECTION */}
                   <div className="p-6 bg-base-100 border-b border-base-300">
@@ -264,6 +273,33 @@ function SessionPage() {
                           {session?.difficulty.slice(0, 1).toUpperCase() +
                             session?.difficulty.slice(1) || "Easy"}
                         </span>
+                        {(!session?.isPrivate || isHost) && (
+                          <button
+                            onClick={handleShareLink}
+                            className="btn btn-outline btn-sm gap-2"
+                          >
+                            <Share2Icon className="w-4 h-4" />
+                            Share Link
+                          </button>
+                        )}
+                        {session?.isPrivate && (
+                          <span className="badge badge-warning badge-lg gap-1">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              className="w-4 h-4 stroke-current"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                              ></path>
+                            </svg>
+                            Private
+                          </span>
+                        )}
                         {isHost && session?.status === "active" && (
                           <button
                             onClick={handleEndSession}
@@ -358,10 +394,11 @@ function SessionPage() {
                   </div>
                 </div>
               </Panel>
-
               <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+            </>
+          )}
 
-              <Panel defaultSize={50} minSize={20}>
+              <Panel defaultSize={session?.problem === "General Practice" ? 100 : 50} minSize={20}>
                 <PanelGroup direction="vertical">
                   <Panel defaultSize={70} minSize={30}>
                     <CodeEditorPanel

@@ -41,12 +41,30 @@ function CreateSessionModal({
                 Choose a coding problem...
               </option>
 
-              {problems.map((problem) => (
-                <option key={problem.id} value={problem.title}>
-                  {problem.title} ({problem.difficulty})
-                </option>
-              ))}
+              {problems
+                .sort((a, b) => (a.id === "general-practice" ? -1 : b.id === "general-practice" ? 1 : 0))
+                .map((problem) => (
+                  <option key={problem.id} value={problem.title}>
+                    {problem.title} {problem.id !== "general-practice" && `(${problem.difficulty})`}
+                  </option>
+                ))}
             </select>
+          </div>
+
+          {/* PRIVATE SESSION TOGGLE */}
+          <div className="form-control">
+            <label className="label cursor-pointer justify-start gap-4">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary"
+                checked={roomConfig.isPrivate}
+                onChange={(e) => setRoomConfig({ ...roomConfig, isPrivate: e.target.checked })}
+              />
+              <span className="label-text font-semibold">Private Session</span>
+              <span className="label-text-alt text-base-content/60">
+                (Only people with the link can join)
+              </span>
+            </label>
           </div>
 
           {/* ROOM SUMMARY */}

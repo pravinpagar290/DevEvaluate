@@ -29,6 +29,10 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
     transcript: {
       type: String,
     },
