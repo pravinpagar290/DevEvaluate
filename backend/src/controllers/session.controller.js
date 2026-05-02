@@ -1,5 +1,6 @@
 import { chatClient, streamClient, upsertStreamUser } from "../utils/stream.js";
 import Session from "../models/Session.model.js";
+import { speechAnalysisService } from "../service/speech-analysis.service.js";
 
 export async function createSession(req, res) {
   try {
@@ -139,6 +140,7 @@ export async function joinSession(req, res) {
 export async function endSession(req, res) {
   try {
     const { id } = req.params;
+    const { transcript } = req.body;
     const userId = req.user._id;
 
     const session = await Session.findById(id);
@@ -163,12 +165,33 @@ export async function endSession(req, res) {
     const channel = chatClient.channel("messaging", session.callId);
     await channel.delete();
 
+    // Perform speech analysis if transcript exists
+    if (transcript) {
+      console.log("🤖 Analyzing transcript for session:", id);
+      try {
+        const analysis = await speechAnalysisService.analyzeTranscript(transcript);
+        session.speechAnalysis = analysis;
+        session.transcript = transcript;
+        console.log("✅ Analysis complete");
+      } catch (analysisError) {
+        console.error("❌ Speech analysis failed:", analysisError.message);
+        // We still want to end the session even if analysis fails
+        session.transcript = transcript;
+        session.speechAnalysis = {
+          score: 0,
+          overallFeedback: "Analysis failed due to a service error.",
+          grammaticalErrors: [],
+          fillerWordsDetected: []
+        };
+      }
+    }
+
     session.status = "completed";
     await session.save();
 
     res.status(200).json({ session, message: "Session ended successfully" });
   } catch (error) {
-    console.log("Error in endSession controller:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.log("Error in endSession controller:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
