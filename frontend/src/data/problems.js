@@ -346,6 +346,24 @@ print(maxArea([1,1]))  # Expected: 1`,
       java: "49\n1",
     },
   },
+
+  "general-practice": {
+    id: "general-practice",
+    title: "General Practice",
+    difficulty: "Easy",
+    category: "General",
+    description: {
+      text: "Free-form coding session. No specific problem constraints.",
+      notes: ["Use this space for general coding or discussions."],
+    },
+    examples: [],
+    constraints: [],
+    starterCode: {
+      javascript: `// Happy Coding!\n\nconsole.log("Hello, World!");`,
+      python: `# Happy Coding!\n\nprint("Hello, World!")`,
+      java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
+    },
+  },
 };
 
 export const LANGUAGE_CONFIG = {
