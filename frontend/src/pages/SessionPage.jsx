@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions.js";
 import { PROBLEMS } from "../data/problems";
@@ -46,6 +46,64 @@ function SessionPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
 
+  // --- REAL-TIME SYNC LOGIC ---
+  const isRemoteChange = useRef(false);
+
+  // 1. Listen for remote updates
+  useEffect(() => {
+    if (!channel || !user) return;
+
+    const handleEvent = (event) => {
+      // Don't process our own events
+      if (event.user.id === user.id) return;
+
+      if (event.type === "code-update") {
+        isRemoteChange.current = true;
+        setCode(event.data.code);
+      } else if (event.type === "language-update") {
+        setSelectedLanguage(event.data.language);
+      } else if (event.type === "code-execution-start") {
+        setIsRunning(true);
+        setOutput(null);
+      } else if (event.type === "code-execution-result") {
+        setOutput(event.data.result);
+        setIsRunning(false);
+      }
+    };
+
+    channel.on("code-update", handleEvent);
+    channel.on("language-update", handleEvent);
+    channel.on("code-execution-start", handleEvent);
+    channel.on("code-execution-result", handleEvent);
+
+    return () => {
+      channel.off("code-update", handleEvent);
+      channel.off("language-update", handleEvent);
+      channel.off("code-execution-start", handleEvent);
+      channel.off("code-execution-result", handleEvent);
+    };
+  }, [channel, user]);
+
+  // 2. Broadcast local code changes (Debounced 500ms)
+  useEffect(() => {
+    if (!channel || !code) return;
+
+    // If this change came from a remote user, don't send it back
+    if (isRemoteChange.current) {
+      isRemoteChange.current = false;
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      channel.sendEvent({
+        type: "code-update",
+        data: { code },
+      });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [code, channel]);
+
   // auto-join session if user is not already a participant and not the host
   useEffect(() => {
     if (!session || !user || loadingSession) return;
@@ -77,15 +135,36 @@ function SessionPage() {
     const starterCode = problemData?.starterCode?.[newLang] || "";
     setCode(starterCode);
     setOutput(null);
+
+    // Sync language change immediately
+    if (channel) {
+      channel.sendEvent({
+        type: "language-update",
+        data: { language: newLang },
+      });
+    }
   };
 
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
 
+    // 1. Notify other user that we are running code
+    if (channel) {
+      channel.sendEvent({ type: "code-execution-start" });
+    }
+
     const result = await executeCode(selectedLanguage, code);
     setOutput(result);
     setIsRunning(false);
+
+    // 2. Broadcast result to other user
+    if (channel) {
+      channel.sendEvent({
+        type: "code-execution-result",
+        data: { result },
+      });
+    }
   };
 
   const handleEndSession = () => {
