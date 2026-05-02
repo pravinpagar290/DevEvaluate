@@ -69,11 +69,16 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
       // iife
       (async () => {
         try {
-          if (videoCall) await videoCall.leave();
+          if (videoCall) {
+            const state = videoCall.state.callingState;
+            if (state !== 'left' && state !== 'idle') {
+              await videoCall.leave();
+            }
+          }
           if (chatClientInstance) await chatClientInstance.disconnectUser();
           await disconnectStreamClient();
         } catch (error) {
-          console.error("Cleanup error:", error);
+          // console.error("Cleanup error:", error);
         }
       })();
     };

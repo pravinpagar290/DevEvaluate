@@ -15,6 +15,7 @@ import OutputPanel from "../components/OutputPanel";
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
+import { startSpeechRecognition, stopSpeechRecognition } from "../../../services/frontend-ai/speech-recognition.service.js";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ function SessionPage() {
 
   // --- REAL-TIME SYNC LOGIC ---
   const isRemoteChange = useRef(false);
+  const fullTranscriptRef = useRef(""); // Accumulates the candidate's speech
 
   // 1. Listen for remote updates
   useEffect(() => {
@@ -69,6 +71,18 @@ function SessionPage() {
       } else if (event.type === "code-execution-result") {
         setOutput(event.data.result);
         setIsRunning(false);
+      } else if (event.type === "speech-transcript") {
+        const remoteRole = event.data.role;
+        const remoteText = event.data.text;
+        
+        // Add the remote user's speech to the full transcript for context
+        const speakerName = remoteRole === 'interviewer' ? 'Interviewer' : 'Candidate';
+        fullTranscriptRef.current += `\n${speakerName}: ${remoteText}`;
+
+        const isInterviewer = remoteRole === 'interviewer';
+        const speakerLabel = isInterviewer ? '👨‍💼 REMOTE INTERVIEWER' : '🧑‍💻 REMOTE INTERVIEWEE';
+        const finalColor = isInterviewer ? 'color: #FF9800; font-weight: bold;' : 'color: #4CAF50; font-weight: bold;';
+        console.log(`%c[${speakerLabel} - FINAL]: %c${remoteText}`, finalColor, 'color: inherit;');
       }
     };
 
@@ -76,12 +90,14 @@ function SessionPage() {
     channel.on("language-update", handleEvent);
     channel.on("code-execution-start", handleEvent);
     channel.on("code-execution-result", handleEvent);
+    channel.on("speech-transcript", handleEvent);
 
     return () => {
       channel.off("code-update", handleEvent);
       channel.off("language-update", handleEvent);
       channel.off("code-execution-start", handleEvent);
       channel.off("code-execution-result", handleEvent);
+      channel.off("speech-transcript", handleEvent);
     };
   }, [channel, user]);
 
@@ -114,6 +130,36 @@ function SessionPage() {
 
     // remove the joinSessionMutation, refetch from dependencies to avoid infinite loop
   }, [session, user, loadingSession, isHost, isParticipant, id]);
+
+  // --- AUDIO TRANSCRIPTION LOGIC ---
+  useEffect(() => {
+    if (!session || loadingSession) return;
+    
+    // Only start if we are part of the session
+    if (isHost || isParticipant) {
+      const role = isHost ? 'interviewer' : 'interviewee';
+      startSpeechRecognition(role, (text, isFinal, resolvedRole) => {
+        
+        // Accumulate local transcript for post-interview analysis
+        if (isFinal) {
+          const speakerName = resolvedRole === 'interviewer' ? 'Interviewer' : 'Candidate';
+          fullTranscriptRef.current += `\n${speakerName}: ${text}`;
+        }
+
+        // Broadcast final transcript to the remote user via the channel
+        if (channel && isFinal) {
+          channel.sendEvent({
+            type: "speech-transcript",
+            data: { text, role: resolvedRole }
+          });
+        }
+      });
+    }
+
+    return () => {
+      stopSpeechRecognition();
+    };
+  }, [session, loadingSession, isHost, isParticipant, channel]);
 
   // redirect the "participant" when session ends
   useEffect(() => {
@@ -176,8 +222,15 @@ function SessionPage() {
 
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
+      const transcript = fullTranscriptRef.current.trim();
+      // Log the full transcript that we will send to the backend for AI Analysis
+      console.log("📝 Session Ended. Full Conversational Transcript for AI Analysis:");
+      console.log(transcript || "(No speech detected)");
+      
       // this will navigate the HOST to dashboard
-      endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
+      endSessionMutation.mutate({ id, transcript }, { 
+        onSuccess: () => navigate(`/session/${id}/analysis`) 
+      });
     }
   };
 

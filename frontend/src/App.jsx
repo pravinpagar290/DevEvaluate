@@ -9,6 +9,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ProblemPage = lazy(() => import("./pages/ProblemPage"));
 const ProblemsPage = lazy(() => import("./pages/ProblemsPage"));
 const SessionPage = lazy(() => import("./pages/SessionPage"));
+const AnalysisPage = lazy(() => import("./pages/AnalysisPage"));
 
 // Loading Fallback
 const ScreenLoader = () => (
@@ -47,6 +48,10 @@ function App() {
           <Route
             path="/session/:id"
             element={isSignedIn ? <SessionPage /> : <Navigate to={"/"} />}
+          />
+          <Route
+            path="/session/:id/analysis"
+            element={isSignedIn ? <AnalysisPage /> : <Navigate to={"/"} />}
           />
         </Routes>
       </Suspense>
