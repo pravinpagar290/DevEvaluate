@@ -29,6 +29,16 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    transcript: {
+      type: String,
+    },
+    speechAnalysis: {
+      score: Number,
+      basicSentenceFormation: String,
+      grammaticalErrors: [String],
+      fillerWordsDetected: [String],
+      overallFeedback: String,
+    },
   },
   { timestamps: true }
 );

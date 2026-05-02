@@ -2,11 +2,10 @@
 // Uses Groq API (LLM) to perform advanced analysis of the interview transcript.
 
 import Groq from "groq-sdk";
+import { ENV } from "../utils/env.js";
 
-// Assumes GROQ_API_KEY is available in your environment variables (.env)
-// If you are running this in the backend, make sure `dotenv` is configured.
 const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
+    apiKey: ENV.GROQ_API_KEY
 });
 
 class SpeechAnalysisService {
@@ -49,7 +48,17 @@ class SpeechAnalysisService {
             });
 
             const resultJson = chatCompletion.choices[0]?.message?.content;
-            return JSON.parse(resultJson);
+            
+            // Robust JSON parsing: handle potential backticks or extra text
+            try {
+                return JSON.parse(resultJson);
+            } catch (parseError) {
+                const jsonMatch = resultJson.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+                throw parseError;
+            }
         } catch (error) {
             console.error("❌ Error analyzing transcript with Groq:", error);
             throw new Error("Failed to analyze transcript.");
