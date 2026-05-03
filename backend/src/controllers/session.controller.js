@@ -195,3 +195,79 @@ export async function endSession(req, res) {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
+
+/**
+ * POST /api/session/:id/analytics
+ * Receives a 30-second batch of vision analytics from the client-side AI pipeline.
+ * Appends the compact summary and updates the rolling average used for final reports.
+ */
+export async function addSessionAnalytics(req, res) {
+  try {
+    const { id } = req.params;
+    const { summary } = req.body;
+
+    if (!summary || typeof summary !== "object") {
+      return res.status(400).json({ message: "Invalid analytics payload: summary is required" });
+    }
+
+    const session = await Session.findById(id);
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (session.status !== "active") {
+      return res.status(400).json({ message: "Cannot add analytics to a completed session" });
+    }
+
+    // Ensure the analytics sub-document structure exists
+    if (!session.analytics) {
+      session.analytics = { batches: [], running: { sampleCount: 0 } };
+    }
+
+    // 1. Append the compact 30-second summary to the batches array
+    session.analytics.batches.push({
+      totalFrames: summary.totalFrames,
+      eyeContactPercentage: summary.eyeContactPercentage,
+      dominantEmotions: summary.dominantEmotions,
+      avgHandVelocity: summary.avgHandVelocity,
+      dataQualityScore: summary.dataQualityScore,
+      windowStart: new Date(summary.windowStart),
+      windowEnd: new Date(summary.windowEnd),
+    });
+
+    // 2. Update the incremental running average (Welford online algorithm)
+    const running = session.analytics.running || { sampleCount: 0 };
+    const n = running.sampleCount || 0;
+
+    running.eyeContactPercentage =
+      ((running.eyeContactPercentage || 0) * n + (summary.eyeContactPercentage || 0)) / (n + 1);
+
+    running.avgHandVelocity =
+      ((running.avgHandVelocity || 0) * n + (summary.avgHandVelocity || 0)) / (n + 1);
+
+    // Merge emotion counts across all batches for cumulative distribution
+    const emotionMap = {};
+    (running.dominantEmotions || []).forEach(({ emotion, count }) => {
+      emotionMap[emotion] = count;
+    });
+    (summary.dominantEmotions || []).forEach(({ emotion, count }) => {
+      emotionMap[emotion] = (emotionMap[emotion] || 0) + count;
+    });
+    running.dominantEmotions = Object.entries(emotionMap)
+      .sort(([, a], [, b]) => b - a)
+      .map(([emotion, count]) => ({ emotion, count }));
+
+    running.sampleCount = n + 1;
+    session.analytics.running = running;
+
+    // markModified required — nested mixed-type objects bypass Mongoose dirty detection
+    session.markModified("analytics");
+    await session.save();
+
+    res.status(200).json({
+      message: "Analytics batch stored",
+      sampleCount: running.sampleCount,
+    });
+  } catch (error) {
+    console.error("Error in addSessionAnalytics controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

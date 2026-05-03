@@ -449,7 +449,12 @@ function SessionPage() {
                 <div className="h-full">
                   <StreamVideo client={streamClient}>
                     <StreamCall call={call}>
-                      <VideoCallUI chatClient={chatClient} channel={channel} />
+                      <VideoCallUI
+                        chatClient={chatClient}
+                        channel={channel}
+                        sessionId={id}
+                        isParticipant={isParticipant}
+                      />
                     </StreamCall>
                   </StreamVideo>
                 </div>
