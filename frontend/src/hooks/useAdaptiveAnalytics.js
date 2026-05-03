@@ -12,6 +12,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { emotionDetector } from '../services/frontend-ai/EmotionDetector.service.js';
 import { gazeDetector } from '../services/frontend-ai/GazeDetector.service.js';
 import { handMovementDetector } from '../services/frontend-ai/HandMovementDetector.service.js';
+import { useAuth } from "@clerk/clerk-react";
+import axiosInstance from '../lib/axios';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ function getAdaptiveFPS() {
  */
 export function useAdaptiveAnalytics(videoElement, sessionId, options = {}) {
   const { enableHands = false, enabled = true } = options;
+  const { getToken } = useAuth();
 
   // Live metrics shown in the UI
   const [metrics, setMetrics] = useState({
@@ -43,6 +46,8 @@ export function useAdaptiveAnalytics(videoElement, sessionId, options = {}) {
     handVelocity: 0,
     emotionConfidence: 0,
     gazeConfidence: 0,
+    gazeX: 0.5,
+    gazeY: 0.5,
   });
 
   // Processing performance stats (useful for debugging)
@@ -148,6 +153,8 @@ export function useAdaptiveAnalytics(videoElement, sessionId, options = {}) {
         handVelocity,
         emotionConfidence: emotionResult?.confidence ?? 0,
         gazeConfidence: gazeResult?.confidence ?? 0,
+        gazeX: gazeResult?.ratios?.x ?? 0.5,
+        gazeY: gazeResult?.ratios?.y ?? 0.5,
       });
 
       // Adaptive FPS: if frame took >100ms, reduce FPS to prevent blocking UI
@@ -191,11 +198,15 @@ export function useAdaptiveAnalytics(videoElement, sessionId, options = {}) {
       const summary = _summarizeBatch(batch);
 
       try {
-        await fetch(`/api/session/${sessionId}/analytics`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ batchMetrics: batch, summary }),
-        });
+        const token = await getToken();
+        console.log(`DEBUG: useAdaptiveAnalytics uploading batch for session ${sessionId}`);
+        
+        await axiosInstance.post(`/sessions/${sessionId}/analytics`, 
+          { batchMetrics: batch, summary },
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
       } catch (err) {
         console.error('[useAdaptiveAnalytics] Batch upload failed, re-queuing:', err.message);
         // Re-add failed batch to the front of the buffer for retry
@@ -204,7 +215,7 @@ export function useAdaptiveAnalytics(videoElement, sessionId, options = {}) {
     }, BATCH_INTERVAL_MS);
 
     return () => clearInterval(batchTimer);
-  }, [sessionId, enabled]);
+  }, [sessionId, enabled, getToken]);
 
   return { metrics, perfStats, isReady, initError };
 }

@@ -3,8 +3,10 @@ import { StreamChat } from "stream-chat";
 import toast from "react-hot-toast";
 import { initializeStreamClient, disconnectStreamClient } from "../lib/stream";
 import { sessionApi } from "../api/sessions";
+import { useAuth } from "@clerk/clerk-react";
 
 function useStreamClient(session, loadingSession, isHost, isParticipant) {
+  const { getToken } = useAuth();
   const [streamClient, setStreamClient] = useState(null);
   const [call, setCall] = useState(null);
   const [chatClient, setChatClient] = useState(null);
@@ -21,7 +23,9 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
       if (session.status === "completed") return;
 
       try {
-        const { token, userId, userName, userImage } = await sessionApi.getStreamToken();
+        const clerkToken = await getToken();
+        console.log("DEBUG: useStreamClient getting stream token with Clerk auth");
+        const { token, userId, userName, userImage } = await sessionApi.getStreamToken(clerkToken);
 
         const client = await initializeStreamClient(
           {

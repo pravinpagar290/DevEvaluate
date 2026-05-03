@@ -6,7 +6,7 @@ import cors from "cors";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./utils/inngest.js";
 import { logger } from "./utils/logger.js";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, getAuth } from "@clerk/express";
 import { protectRoute } from "./middleware/protectRoute.js";
 import chatRoutes from "./routes/chat.routes.js";
 import sessionRoutes from "./routes/session.routes.js";
@@ -23,20 +23,16 @@ app.use(
       ENV.CLIENT_URL,
     ].filter(Boolean),
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
 
 app.use(express.json());
-app.use(clerkMiddleware());
 
-app.use((req, res, next) => {
-  // console.log("📥 Incoming request:", req.method, req.url);
-  // console.log(
-  //   "🔑 Auth header:",
-  //   req.headers.authorization ? "EXISTS" : "MISSING",
-  // )
-  next();
-});
+app.use(clerkMiddleware({
+  clockSkewInSeconds: 300,
+}));
 
 // Request logger middleware
 app.use((req, res, next) => {
@@ -52,6 +48,7 @@ app.use((req, res, next) => {
   });
   next();
 });
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });

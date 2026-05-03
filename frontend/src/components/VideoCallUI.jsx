@@ -3,6 +3,7 @@ import {
   CallingState,
   SpeakerLayout,
   useCallStateHooks,
+  useCall,
 } from "@stream-io/video-react-sdk";
 import {
   BrainCircuitIcon,
@@ -57,8 +58,10 @@ function VideoCallUI({ chatClient, channel, sessionId, isParticipant }) {
   const participantCount = useParticipantCount();
   const localParticipant = useLocalParticipant();
 
+  const call = useCall();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
+  const [hostMetrics, setHostMetrics] = useState(null); // Used by the host to view candidate's live data
 
   // ── Hidden video element: mirrors the local webcam stream for AI processing
   // The visible video is handled by SpeakerLayout; this one is invisible to the user.
@@ -78,8 +81,45 @@ function VideoCallUI({ chatClient, channel, sessionId, isParticipant }) {
   const { metrics, isReady: analyticsReady } = useAdaptiveAnalytics(
     hiddenVideoRef.current,
     sessionId,
-    { enabled: isParticipant }
+    { enabled: isParticipant, enableHands: true }
   );
+
+  // ── Custom Events: Stream Live Metrics to Host ─────────────────────────────
+  
+  // 1. Participant (Candidate) sends metrics to the call channel every 1 second
+  const lastSendTime = useRef(0);
+  useEffect(() => {
+    if (!isParticipant || !call || !metrics.emotion) return;
+    
+    const now = Date.now();
+    if (now - lastSendTime.current >= 1000) {
+      call.sendCustomEvent({
+        type: 'ai_metrics_update',
+        payload: metrics,
+      }).catch(() => null);
+      lastSendTime.current = now;
+    }
+  }, [metrics, isParticipant, call]);
+
+  // 2. Host (Interviewer) listens for metrics from the participant
+  useEffect(() => {
+    if (isParticipant || !call) return;
+    
+    console.log('[Host] 🟢 Listening for live AI metrics from candidate...');
+
+    const unsubscribe = call.on('custom', (event) => {
+      const data = event.custom || event;
+      if (data.type === 'ai_metrics_update' && data.payload) {
+        // console.log('[Host] 📩 Received AI metrics:', data.payload);
+        setHostMetrics(data.payload);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isParticipant, call]);
+
+  // Determine what to display based on role
+  const displayMetrics = isParticipant ? null : hostMetrics;
 
   // ── Render guards ──────────────────────────────────────────────────────────
   if (callingState === CallingState.JOINING) {
@@ -93,18 +133,19 @@ function VideoCallUI({ chatClient, channel, sessionId, isParticipant }) {
     );
   }
 
-  const movementInfo = getMovementLabel(metrics.handVelocity);
+  const movementInfo = displayMetrics ? getMovementLabel(displayMetrics.handVelocity) : null;
 
   return (
     <div className="h-full flex gap-3 relative str-video">
 
-      {/* ── Hidden video for AI ── */}
+      {/* ── Hidden video for AI (Must be in DOM and 'visible' for browser to render frames) ── */}
       <video
         ref={hiddenVideoRef}
         autoPlay
         playsInline
         muted
-        style={{ display: "none" }}
+        className="absolute opacity-0 pointer-events-none"
+        style={{ width: "1px", height: "1px" }}
         aria-hidden="true"
       />
 
@@ -120,15 +161,15 @@ function VideoCallUI({ chatClient, channel, sessionId, isParticipant }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Analytics toggle — only visible to the participant */}
-            {isParticipant && (
+            {/* Analytics toggle — ONLY VISIBLE TO THE HOST NOW */}
+            {!isParticipant && (
               <button
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className={`btn btn-sm gap-2 ${showAnalytics ? "btn-secondary" : "btn-ghost"}`}
                 title={showAnalytics ? "Hide AI metrics" : "Show AI metrics"}
               >
                 <BrainCircuitIcon className="size-4" />
-                AI Metrics
+                Live Candidate Analysis
               </button>
             )}
 
@@ -145,73 +186,83 @@ function VideoCallUI({ chatClient, channel, sessionId, isParticipant }) {
           </div>
         </div>
 
-        {/* ── Live AI Metrics Panel ── */}
-        {isParticipant && showAnalytics && (
+        {/* ── Live AI Metrics Panel (HOST ONLY) ── */}
+        {!isParticipant && showAnalytics && (
           <div className="bg-base-100 rounded-lg shadow px-4 py-3 border border-base-300">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-base-content/50 uppercase tracking-wider">
                 Live AI Analysis
               </span>
-              {!analyticsReady && (
+              {!displayMetrics && (
                 <span className="flex items-center gap-1 text-xs text-warning">
                   <Loader2Icon className="w-3 h-3 animate-spin" />
-                  Loading models…
+                  Waiting for candidate...
                 </span>
               )}
-              {analyticsReady && (
+              {displayMetrics && (
                 <span className="text-xs text-success font-medium">● Live</span>
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            {displayMetrics && (
+              <div className="grid grid-cols-3 gap-3">
 
-              {/* Emotion */}
-              <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
-                <SmileIcon className="w-4 h-4 text-base-content/50" />
-                <span className="text-xs text-base-content/50">Emotion</span>
-                <span className="text-lg leading-none">
-                  {metrics.emotion ? EMOTION_EMOJI[metrics.emotion] ?? "🤔" : "—"}
-                </span>
-                <span className="text-xs font-medium capitalize">
-                  {metrics.emotion ?? "—"}
-                </span>
-                {metrics.emotionConfidence > 0 && (
-                  <span className="text-[10px] text-base-content/40">
-                    {Math.round(metrics.emotionConfidence * 100)}% conf
+                {/* Emotion */}
+                <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
+                  <SmileIcon className="w-4 h-4 text-base-content/50" />
+                  <span className="text-xs text-base-content/50">Emotion</span>
+                  <span className="text-lg leading-none">
+                    {displayMetrics.emotion ? EMOTION_EMOJI[displayMetrics.emotion] ?? "🤔" : "—"}
                   </span>
-                )}
-              </div>
-
-              {/* Eye Contact */}
-              <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
-                {metrics.eyeContact
-                  ? <EyeIcon className="w-4 h-4 text-success" />
-                  : <EyeOffIcon className="w-4 h-4 text-error" />
-                }
-                <span className="text-xs text-base-content/50">Eye Contact</span>
-                <span className={`text-sm font-bold ${metrics.eyeContact ? "text-success" : "text-error"}`}>
-                  {metrics.eyeContact ? "Yes" : "No"}
-                </span>
-                {metrics.gazeConfidence > 0 && (
-                  <span className="text-[10px] text-base-content/40">
-                    {Math.round(metrics.gazeConfidence * 100)}% conf
+                  <span className="text-xs font-medium capitalize">
+                    {displayMetrics.emotion ?? "—"}
                   </span>
-                )}
-              </div>
+                  {displayMetrics.emotionConfidence > 0 && (
+                    <span className="text-[10px] text-base-content/40">
+                      {Math.round(displayMetrics.emotionConfidence * 100)}% conf
+                    </span>
+                  )}
+                </div>
 
-              {/* Hand Movement */}
-              <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
-                <HandIcon className="w-4 h-4 text-base-content/50" />
-                <span className="text-xs text-base-content/50">Movement</span>
-                <span className={`text-sm font-bold ${movementInfo.color}`}>
-                  {movementInfo.label}
-                </span>
-                <span className="text-[10px] text-base-content/40">
-                  {metrics.handVelocity}/10
-                </span>
-              </div>
+                {/* Eye Contact */}
+                <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
+                  <div className="flex items-center gap-2">
+                    {/* Live animated eyeball */}
+                    <div className="relative w-8 h-4 bg-white rounded-[100%] border border-gray-400 overflow-hidden shadow-inner">
+                      <div 
+                        className="absolute w-2.5 h-2.5 bg-black rounded-full transition-all duration-75"
+                        style={{
+                          left: `${displayMetrics.gazeX * 100}%`,
+                          top: `${displayMetrics.gazeY * 100}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs text-base-content/50 mt-1">Eye Contact</span>
+                  <span className={`text-sm font-bold ${displayMetrics.eyeContact ? "text-success" : "text-error"}`}>
+                    {displayMetrics.eyeContact ? "Yes" : "No"}
+                  </span>
+                  {displayMetrics.gazeConfidence > 0 && (
+                    <span className="text-[10px] text-base-content/40">
+                      X: {Math.round(displayMetrics.gazeX * 100)}% | Y: {Math.round(displayMetrics.gazeY * 100)}%
+                    </span>
+                  )}
+                </div>
 
-            </div>
+                {/* Hand Movement */}
+                <div className="flex flex-col items-center gap-1 bg-base-200 rounded-lg p-2">
+                  <HandIcon className="w-4 h-4 text-base-content/50" />
+                  <span className="text-xs text-base-content/50">Movement</span>
+                  <span className={`text-sm font-bold ${movementInfo.color}`}>
+                    {movementInfo.label}
+                  </span>
+                  <span className="text-[10px] text-base-content/40">
+                    {displayMetrics.handVelocity}/10
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

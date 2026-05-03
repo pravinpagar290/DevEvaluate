@@ -1,12 +1,16 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { sessionApi } from "../api/sessions.js";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 
 export const useCreateSession = () => {
+  const { getToken } = useAuth();
   const result = useMutation({
     mutationKey: ["createSession"],
-    mutationFn: sessionApi.createSession,
+    mutationFn: async (data) => {
+      const token = await getToken();
+      return sessionApi.createSession(data, token);
+    },
     onSuccess: () => toast.success("Session created successfully!"),
     onError: (error) =>
       toast.error(error.response?.data?.message || "Failed to create room"),
@@ -16,10 +20,15 @@ export const useCreateSession = () => {
 };
 
 export const useActiveSessions = () => {
-  const { user,isLoaded } = useUser();
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const result = useQuery({
     queryKey: ["activeSessions"],
-    queryFn: sessionApi.getActiveSessions,
+    queryFn: async () => {
+      const token = await getToken();
+      console.log("DEBUG: useActiveSessions fetching with token:", !!token);
+      return sessionApi.getActiveSessions(token);
+    },
     enabled: !!user?.id && isLoaded,
   });
 
@@ -27,10 +36,14 @@ export const useActiveSessions = () => {
 };
 
 export const useMyRecentSessions = () => {
-  const { user,isLoaded } = useUser();
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const result = useQuery({
     queryKey: ["myRecentSessions"],
-    queryFn: sessionApi.getMyRecentSessions,
+    queryFn: async () => {
+      const token = await getToken();
+      return sessionApi.getMyRecentSessions(token);
+    },
     enabled: !!user?.id && isLoaded,
   });
 
@@ -38,9 +51,13 @@ export const useMyRecentSessions = () => {
 };
 
 export const useSessionById = (id) => {
+  const { getToken } = useAuth();
   const result = useQuery({
     queryKey: ["session", id],
-    queryFn: () => sessionApi.getSessionById(id),
+    queryFn: async () => {
+      const token = await getToken();
+      return sessionApi.getSessionById(id, token);
+    },
     enabled: !!id,
     refetchInterval: 5000, // refetch every 5 seconds to detect session status changes
   });
@@ -49,9 +66,13 @@ export const useSessionById = (id) => {
 };
 
 export const useJoinSession = () => {
+  const { getToken } = useAuth();
   const result = useMutation({
     mutationKey: ["joinSession"],
-    mutationFn: sessionApi.joinSession,
+    mutationFn: async (id) => {
+      const token = await getToken();
+      return sessionApi.joinSession(id, token);
+    },
     onSuccess: () => toast.success("Joined session successfully!"),
     onError: (error) =>
       toast.error(error.response?.data?.message || "Failed to join session"),
@@ -61,9 +82,13 @@ export const useJoinSession = () => {
 };
 
 export const useEndSession = () => {
+  const { getToken } = useAuth();
   const result = useMutation({
     mutationKey: ["endSession"],
-    mutationFn: sessionApi.endSession,
+    mutationFn: async ({ id, transcript }) => {
+      const token = await getToken();
+      return sessionApi.endSession({ id, transcript }, token);
+    },
     onSuccess: () => toast.success("Session ended successfully!"),
     onError: (error) =>
       toast.error(error.response?.data?.message || "Failed to end session"),

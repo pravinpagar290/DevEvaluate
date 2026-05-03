@@ -10,19 +10,23 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(async (config) => {
   try {
-    // Wait for Clerk to be ready before getting token
-    // console.log("🛠️ Axios interceptor: Checking Clerk...");
-    await window.Clerk?.load();
-    const token = await window.Clerk?.session?.getToken();
-    // console.log("🛠️ Axios interceptor: Token", token ? "✅ FOUND" : "❌ MISSING");
+    // If header is already set (e.g. via explicit call), don't overwrite it
+    if (config.headers.Authorization) {
+      console.log("DEBUG: Authorization header already present, skipping interceptor injection");
+      return config;
+    }
 
+    // Fallback to window.Clerk if available
+    const token = await window.Clerk?.session?.getToken();
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("DEBUG: Authorization Header injected via window.Clerk");
     } else {
-      console.warn("⚠️ No Clerk token available");
+      console.warn("⚠️ No Clerk token available for request to:", config.url);
     }
   } catch (e) {
-    console.error("❌ Failed to get Clerk token:", e);
+    console.error("❌ Failed to get Clerk token in interceptor:", e);
   }
   return config;
 });
