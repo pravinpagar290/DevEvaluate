@@ -15,7 +15,7 @@ import OutputPanel from "../components/OutputPanel";
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
-import { startSpeechRecognition, stopSpeechRecognition } from "../../../services/frontend-ai/speech-recognition.service.js";
+import { startSpeechRecognition, stopSpeechRecognition } from "../services/frontend-ai/speech-recognition.service.js";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -449,7 +449,12 @@ function SessionPage() {
                 <div className="h-full">
                   <StreamVideo client={streamClient}>
                     <StreamCall call={call}>
-                      <VideoCallUI chatClient={chatClient} channel={channel} />
+                      <VideoCallUI
+                        chatClient={chatClient}
+                        channel={channel}
+                        sessionId={id}
+                        isParticipant={isParticipant}
+                      />
                     </StreamCall>
                   </StreamVideo>
                 </div>
