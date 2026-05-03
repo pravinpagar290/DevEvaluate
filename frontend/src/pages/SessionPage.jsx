@@ -15,7 +15,7 @@ import OutputPanel from "../components/OutputPanel";
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
-import { startSpeechRecognition, stopSpeechRecognition } from "../../../services/frontend-ai/speech-recognition.service.js";
+import { startSpeechRecognition, stopSpeechRecognition } from "../services/frontend-ai/speech-recognition.service.js";
 
 function SessionPage() {
   const navigate = useNavigate();

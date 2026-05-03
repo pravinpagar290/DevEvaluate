@@ -9,9 +9,9 @@
 // 3. Every BATCH_INTERVAL ms, the buffer is summarized and sent to the backend
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { emotionDetector } from '../../../services/frontend-ai/EmotionDetector.service.js';
-import { gazeDetector } from '../../../services/frontend-ai/GazeDetector.service.js';
-import { handMovementDetector } from '../../../services/frontend-ai/HandMovementDetector.service.js';
+import { emotionDetector } from '../services/frontend-ai/EmotionDetector.service.js';
+import { gazeDetector } from '../services/frontend-ai/GazeDetector.service.js';
+import { handMovementDetector } from '../services/frontend-ai/HandMovementDetector.service.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
