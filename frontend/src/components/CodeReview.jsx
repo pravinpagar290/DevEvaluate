@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { sessionApi } from "../api/sessions.js";
 import { SparklesIcon, CopyIcon, CheckIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
 
 const CodeReview = ({ code }) => {
+  const { getToken } = useAuth();
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +20,8 @@ const CodeReview = ({ code }) => {
     setError("");
 
     try {
-      const response = await sessionApi.getCodeReview(code);
+      const token = await getToken();
+      const response = await sessionApi.getCodeReview(code, token);
       const result =
         typeof response === "string"
           ? response

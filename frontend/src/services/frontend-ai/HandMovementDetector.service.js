@@ -5,9 +5,9 @@
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 
-// Movement velocity scale: 1 = still, 10 = very fidgety
-// Ideal range for a confident candidate: 2–5
-const VELOCITY_SCALE = 50; // Multiplier to convert raw pixel delta to 1–10 scale
+// Multiplier to convert screen-percentage-per-second to a 1–10 scale.
+// A speed of 0.5 screens/sec * 15 = 7.5 (Fidgety)
+const VELOCITY_SCALE = 15; 
 
 class HandMovementDetector {
   constructor() {
@@ -16,6 +16,7 @@ class HandMovementDetector {
     this._isReady = false;
     this._latestLandmarks = null;
     this._previousLandmarks = null;
+    this._lastCallTime = 0;
   }
 
   /**
@@ -40,7 +41,8 @@ class HandMovementDetector {
     });
 
     this._hands.onResults((results) => {
-      this._previousLandmarks = this._latestLandmarks;
+      // Just store the latest, do NOT update previous here. 
+      // We update previous when getHandVelocity is called.
       this._latestLandmarks = results.multiHandLandmarks ?? null;
     });
 
@@ -60,18 +62,24 @@ class HandMovementDetector {
   }
 
   /**
-   * Computes hand movement velocity from the delta between the last two frames.
+   * Computes hand movement velocity based on distance moved over time elapsed.
    * @returns {{ velocity: number, handsDetected: number, confidence: number } | null}
    */
   getHandVelocity() {
     if (!this._isReady) return null;
 
-    // No hands in frame = velocity of 0 (hands are still or not visible)
+    const now = performance.now();
+
+    // No hands in frame
     if (!this._latestLandmarks || this._latestLandmarks.length === 0) {
+      this._previousLandmarks = null;
+      this._lastCallTime = now;
       return { velocity: 0, handsDetected: 0, confidence: 0.5 };
     }
 
     if (!this._previousLandmarks) {
+      this._previousLandmarks = this._latestLandmarks;
+      this._lastCallTime = now;
       return { velocity: 1, handsDetected: this._latestLandmarks.length, confidence: 0.7 };
     }
 
@@ -97,8 +105,19 @@ class HandMovementDetector {
     });
 
     const avgDelta = comparedPoints > 0 ? totalDelta / comparedPoints : 0;
+    
+    // Time delta in seconds (prevent divide by zero)
+    const timeDeltaSec = Math.max((now - this._lastCallTime) / 1000, 0.05); 
+    
+    // Speed is "screen percentage traversed per second"
+    const speedPerSecond = avgDelta / timeDeltaSec;
+
     // Clamp to 0–10 scale
-    const velocity = Math.min(10, Math.round(avgDelta * VELOCITY_SCALE));
+    const velocity = Math.min(10, Math.round(speedPerSecond * VELOCITY_SCALE));
+
+    // Save current state for the next cycle
+    this._previousLandmarks = this._latestLandmarks;
+    this._lastCallTime = now;
 
     return {
       velocity,
