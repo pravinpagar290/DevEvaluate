@@ -11,11 +11,13 @@ import { Loader2Icon, LogOutIcon, PhoneOffIcon, Share2Icon } from "lucide-react"
 import toast from "react-hot-toast";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
+import CollaborativeCanvas from "../components/CollaborativeCanvas";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
 import { startSpeechRecognition, stopSpeechRecognition } from "../services/frontend-ai/speech-recognition.service.js";
+import { useProctoring } from "../hooks/useProctoring.js";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ function SessionPage() {
   const { user } = useUser();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [viewMode, setViewMode] = useState('code');
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -39,6 +42,10 @@ function SessionPage() {
     isHost,
     isParticipant
   );
+
+  // --- PROCTORING LOGIC ---
+  // Note: Enabled for both host and participant for testing purposes
+  const { enterFullScreen, getViolations } = useProctoring(id, channel, true);
 
   // find the problem data based on session problem title
   const problemData = session?.problem
@@ -83,6 +90,15 @@ function SessionPage() {
         const speakerLabel = isInterviewer ? '👨‍💼 REMOTE INTERVIEWER' : '🧑‍💻 REMOTE INTERVIEWEE';
         const finalColor = isInterviewer ? 'color: #FF9800; font-weight: bold;' : 'color: #4CAF50; font-weight: bold;';
         console.log(`%c[${speakerLabel} - FINAL]: %c${remoteText}`, finalColor, 'color: inherit;');
+      } else if (event.type === "proctoring-violation") {
+        if (isHost) {
+          const { type } = event.data;
+          toast.error(`ALERT: Candidate ${type.replace('-', ' ')} detected!`, {
+            duration: 6000,
+            position: 'top-right',
+            icon: '🚫',
+          });
+        }
       }
     };
 
@@ -98,8 +114,9 @@ function SessionPage() {
       channel.off("code-execution-start", handleEvent);
       channel.off("code-execution-result", handleEvent);
       channel.off("speech-transcript", handleEvent);
+      channel.off("proctoring-violation", handleEvent);
     };
-  }, [channel, user]);
+  }, [channel, user, isHost]);
 
   // 2. Broadcast local code changes (Debounced 500ms)
   useEffect(() => {
@@ -228,7 +245,8 @@ function SessionPage() {
       console.log(transcript || "(No speech detected)");
       
       // this will navigate the HOST to dashboard
-      endSessionMutation.mutate({ id, transcript }, { 
+      const violations = getViolations();
+      endSessionMutation.mutate({ id, transcript, violations }, { 
         onSuccess: () => navigate(`/session/${id}/analysis`) 
       });
     }
@@ -408,6 +426,10 @@ function SessionPage() {
                       onLanguageChange={handleLanguageChange}
                       onCodeChange={(value) => setCode(value)}
                       onRunCode={handleRunCode}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      channel={channel}
+                      isHost={isHost}
                     />
                   </Panel>
 

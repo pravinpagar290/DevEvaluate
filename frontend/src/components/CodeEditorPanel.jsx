@@ -1,6 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { Loader2Icon, PlayIcon } from "lucide-react";
 import { LANGUAGE_CONFIG } from "../data/problems";
+import CollaborativeCanvas from "./CollaborativeCanvas";
 
 function CodeEditorPanel({
   selectedLanguage,
@@ -11,6 +12,10 @@ function CodeEditorPanel({
   onRunCode,
   showReview,
   onReviewToggle,
+  viewMode,
+  onViewModeChange,
+  channel,
+  isHost,
 }) {
   return (
     <div className="h-full bg-base-300 flex flex-col">
@@ -28,6 +33,22 @@ function CodeEditorPanel({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="join bg-base-200 p-0.5 rounded-lg border border-base-300">
+          <button
+            className={`join-item btn btn-xs px-4 ${viewMode === 'code' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => onViewModeChange('code')}
+          >
+            Code
+          </button>
+          <button
+            className={`join-item btn btn-xs px-4 ${viewMode === 'whiteboard' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => onViewModeChange('whiteboard')}
+          >
+            Whiteboard
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -55,21 +76,25 @@ function CodeEditorPanel({
         </div>
       </div>
 
-      <div className="flex-1">
-        <Editor
-          height={"100%"}
-          language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
-          value={code}
-          onChange={onCodeChange}
-          theme="vs-dark"
-          options={{
-            fontSize: 16,
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            automaticLayout: true,
-            minimap: { enabled: false },
-          }}
-        />
+      <div className="flex-1 relative">
+        {viewMode === 'code' ? (
+          <Editor
+            height={"100%"}
+            language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
+            value={code}
+            onChange={onCodeChange}
+            theme="vs-dark"
+            options={{
+              fontSize: 16,
+              lineNumbers: "on",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              minimap: { enabled: false },
+            }}
+          />
+        ) : (
+          <CollaborativeCanvas channel={channel} isHost={isHost} />
+        )}
       </div>
     </div>
   );
